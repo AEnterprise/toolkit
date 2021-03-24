@@ -1,23 +1,20 @@
-// Originally pulled from https://github.com/JasonEtco/actions-toolkit/blob/master/src/github.ts
-import {GraphQlQueryResponse, Variables, defaults} from '@octokit/graphql'
-import Octokit from '@octokit/rest'
 import * as Context from './context'
+import {GitHub, getOctokitOptions} from './utils'
 
-// We need this in order to extend Octokit
-Octokit.prototype = new Octokit()
+// octokit + plugins
+import {OctokitOptions} from '@octokit/core/dist-types/types'
 
 export const context = new Context.Context()
 
-export class GitHub extends Octokit {
-  graphql: (
-    query: string,
-    variables?: Variables
-  ) => Promise<GraphQlQueryResponse>
-
-  constructor(token: string) {
-    super({auth: `token ${token}`})
-    this.graphql = defaults({
-      headers: {authorization: `token ${token}`}
-    })
-  }
+/**
+ * Returns a hydrated octokit ready to use for GitHub Actions
+ *
+ * @param     token    the repo PAT or GITHUB_TOKEN
+ * @param     options  other options to set
+ */
+export function getOctokit(
+  token: string,
+  options?: OctokitOptions
+): InstanceType<typeof GitHub> {
+  return new GitHub(getOctokitOptions(token, options))
 }

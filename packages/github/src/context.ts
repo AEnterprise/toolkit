@@ -1,7 +1,7 @@
-// Originally pulled from https://github.com/JasonEtco/actions-toolkit/blob/master/src/context.ts
+// Originally pulled from https://github.com/JasonEtco/actions-toolkit/blob/main/src/context.ts
 import {WebhookPayload} from './interfaces'
-
-/* eslint-disable @typescript-eslint/no-require-imports */
+import {readFileSync, existsSync} from 'fs'
+import {EOL} from 'os'
 
 export class Context {
   /**
@@ -15,20 +15,34 @@ export class Context {
   workflow: string
   action: string
   actor: string
+  job: string
+  runNumber: number
+  runId: number
 
   /**
    * Hydrate the context from the environment
    */
   constructor() {
-    this.payload = process.env.GITHUB_EVENT_PATH
-      ? require(process.env.GITHUB_EVENT_PATH)
-      : {}
+    this.payload = {}
+    if (process.env.GITHUB_EVENT_PATH) {
+      if (existsSync(process.env.GITHUB_EVENT_PATH)) {
+        this.payload = JSON.parse(
+          readFileSync(process.env.GITHUB_EVENT_PATH, {encoding: 'utf8'})
+        )
+      } else {
+        const path = process.env.GITHUB_EVENT_PATH
+        process.stdout.write(`GITHUB_EVENT_PATH ${path} does not exist${EOL}`)
+      }
+    }
     this.eventName = process.env.GITHUB_EVENT_NAME as string
     this.sha = process.env.GITHUB_SHA as string
     this.ref = process.env.GITHUB_REF as string
     this.workflow = process.env.GITHUB_WORKFLOW as string
     this.action = process.env.GITHUB_ACTION as string
     this.actor = process.env.GITHUB_ACTOR as string
+    this.job = process.env.GITHUB_JOB as string
+    this.runNumber = parseInt(process.env.GITHUB_RUN_NUMBER as string, 10)
+    this.runId = parseInt(process.env.GITHUB_RUN_ID as string, 10)
   }
 
   get issue(): {owner: string; repo: string; number: number} {
@@ -36,7 +50,7 @@ export class Context {
 
     return {
       ...this.repo,
-      number: (payload.issue || payload.pullRequest || payload).number
+      number: (payload.issue || payload.pull_request || payload).number
     }
   }
 
